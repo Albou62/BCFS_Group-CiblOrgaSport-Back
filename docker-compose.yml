@@ -1,15 +1,13 @@
-version: '3.9'
-
 services:
   app:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: .              # racine du projet
+      dockerfile: Dockerfile  # Dockerfile à la racine
     container_name: ciblorgasport-back
     ports:
       - "1001:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/mydb
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/glop
       SPRING_DATASOURCE_USERNAME: admin
       SPRING_DATASOURCE_PASSWORD: password
     depends_on:

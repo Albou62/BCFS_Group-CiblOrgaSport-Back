@@ -15,16 +15,22 @@
     <relativePath/> 
   </parent>
 
+  <properties>
+    <java.version>17</java.version>
+  </properties>
+
   <dependencies>
+    <!-- Dépendance Spring Web pour les contrôleurs REST -->
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>3.8.1</version>
-      <scope>test</scope>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
     </dependency>
+    
+    <!-- Dépendance de test moderne (remplace JUnit 3.8.1) -->
     <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter</artifactId>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 
@@ -34,7 +40,7 @@
         <directory>src/main/resources</directory>
         <filtering>true</filtering>
       </resource>
-	  </resources>
+    </resources>
     <plugins>
         <plugin>
             <groupId>org.springframework.boot</groupId>

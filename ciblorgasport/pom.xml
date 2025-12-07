@@ -27,13 +27,6 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>
     </dependency>
-    
-    <dependency>
-  <groupId>com.h2database</groupId>
-  <artifactId>h2</artifactId>
-  <scope>runtime</scope>
-</dependency>
-
 
     <!-- Security -->
     <dependency>
@@ -88,7 +81,7 @@
     <resources>
       <resource>
         <directory>src/main/resources</directory>
-        <filtering>true</filtering>
+        <filtering>false</filtering>
       </resource>
     </resources>
     <plugins>

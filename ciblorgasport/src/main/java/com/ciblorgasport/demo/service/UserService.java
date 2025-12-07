@@ -2,6 +2,9 @@ package com.ciblorgasport.demo.service;
 
 import com.ciblorgasport.demo.entity.User;
 import com.ciblorgasport.demo.repository.UserRepository;
+
+import java.util.List;
+
 import org.springframework.security.core.userdetails.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -40,5 +43,18 @@ public class UserService implements UserDetailsService {
                 .password(user.getPassword())
                 .roles(user.getRole().name()) // ROLE_SPECTATEUR, etc.
                 .build();
+    }
+
+    public List<User> getAllUsers() {
+        List<User> users = userRepository.findAll();
+        return users;
+    }
+
+    public User updateUserRole(Long userId, User.Role newRole) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+
+        user.setRole(newRole);
+        return userRepository.save(user);
     }
 }

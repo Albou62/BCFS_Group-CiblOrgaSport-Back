@@ -2,6 +2,7 @@ package com.ciblorgasport.demo.controller;
 
 import com.ciblorgasport.demo.dto.LoginRequest;
 import com.ciblorgasport.demo.dto.TokenResponse;
+import com.ciblorgasport.demo.dto.UserDto;
 import com.ciblorgasport.demo.security.JwtService;
 import com.ciblorgasport.demo.service.UserService;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -23,6 +24,12 @@ public class AuthController {
         this.authManager = authManager;
         this.jwtService = jwtService;
         this.userService = userService;
+    }
+    
+    @GetMapping("/me")
+    public UserDto me(org.springframework.security.core.Authentication auth) {
+        var user = userService.findByUsername(auth.getName());
+        return new UserDto(user.getId(), user.getUsername(), user.getRole());
     }
 
     @PostMapping("/register")

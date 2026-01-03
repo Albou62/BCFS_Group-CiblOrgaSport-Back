@@ -1,29 +1,32 @@
 services:
-  app:
+  auth-service:
     build:
-      context: .              # racine du projet
-      dockerfile: Dockerfile  # Dockerfile à la racine
-    container_name: ciblorgasport-back
+      context: .
+      dockerfile: Dockerfile
+    container_name: ciblorgasport-auth
     ports:
       - "1001:8080"
     environment:
+      SPRING_PROFILES_ACTIVE: docker
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/glop
       SPRING_DATASOURCE_USERNAME: admin
       SPRING_DATASOURCE_PASSWORD: password
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
   db:
     image: postgres:16.10-bookworm
-    container_name: postgresql_database
     environment:
       POSTGRES_DB: glop
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: password
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d glop"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
 
 volumes:
   postgres_data:

@@ -2,9 +2,9 @@
 FROM maven:3.9.6-eclipse-temurin-21 AS build
 WORKDIR /app
 
-# Copier pom.xml et src depuis le sous-dossier ciblorgasport
-COPY ciblorgasport/pom.xml .
-COPY ciblorgasport/src ./src
+# Copier pom.xml et src depuis le sous-dossier auth-service
+COPY auth-service/pom.xml .
+COPY auth-service/src ./src
 
 RUN mvn clean package -DskipTests
 

@@ -3,6 +3,7 @@ package com.ciblorgasport.demo.controller;
 import java.util.List;
 
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -16,7 +17,7 @@ import com.ciblorgasport.demo.entity.User;
 import com.ciblorgasport.demo.repository.UserRepository;
 import com.ciblorgasport.demo.service.UserService;
 
-
+@CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/api/admin/users")
 public class AdminUserController {

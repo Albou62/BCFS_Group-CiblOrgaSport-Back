@@ -1,11 +1,23 @@
 services:
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+    container_name: ciblorgasport-api-gateway
+    ports:
+      - "80:80"
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      competition-service:
+        condition: service_healthy
+
   auth-service:
     build:
       context: .
-      dockerfile: Dockerfile-auth        # renomme ton Dockerfile actuel en Dockerfile-auth
+      dockerfile: auth-service/Dockerfile        # renomme ton Dockerfile actuel en Dockerfile-auth
     container_name: ciblorgasport-auth
-    ports:
-      - "1001:8080"
     environment:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/glop
@@ -18,10 +30,8 @@ services:
   competition-service:
     build:
       context: .
-      dockerfile: Dockerfile-competition
+      dockerfile: competition-service/Dockerfile
     container_name: ciblorgasport-competition
-    ports:
-      - "1003:8082"       # nouveau port externe pour le microservice compétition
     environment:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/glop

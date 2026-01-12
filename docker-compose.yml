@@ -2,10 +2,26 @@ services:
   auth-service:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile-auth        # renomme ton Dockerfile actuel en Dockerfile-auth
     container_name: ciblorgasport-auth
     ports:
       - "1001:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/glop
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: password
+    depends_on:
+      db:
+        condition: service_healthy
+
+  competition-service:
+    build:
+      context: .
+      dockerfile: Dockerfile-competition
+    container_name: ciblorgasport-competition
+    ports:
+      - "1003:8082"       # nouveau port externe pour le microservice compétition
     environment:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/glop
@@ -26,7 +42,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-
 
 volumes:
   postgres_data:

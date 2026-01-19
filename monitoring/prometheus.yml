@@ -1,0 +1,6 @@
+scrape_configs:
+  - job_name: 'ciblorgasport-monitoring'
+    metrics_path: '/actuator/prometheus'
+    scrape_interval: 60s # This can be adjusted based on our needs
+    static_configs:
+      - targets: ['auth-service:8080', 'competition-service:8080']

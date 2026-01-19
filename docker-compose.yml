@@ -9,9 +9,11 @@ services:
       - "80:80"
     depends_on:
       auth-service:
-        condition: service_healthy
+        condition: service_started
       competition-service:
-        condition: service_healthy
+        condition: service_started
+    networks:
+      - ciblorgasport
 
   auth-service:
     build:
@@ -26,6 +28,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    networks:
+      - ciblorgasport
 
   competition-service:
     build:
@@ -40,6 +44,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    networks:
+      - ciblorgasport
 
   db:
     image: postgres:16.10-bookworm
@@ -52,6 +58,12 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - ciblorgasport
 
 volumes:
   postgres_data:
+
+networks:
+  ciblorgasport:
+    driver: bridge

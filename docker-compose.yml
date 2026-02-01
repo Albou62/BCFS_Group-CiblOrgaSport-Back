@@ -6,7 +6,7 @@ services:
       dockerfile: api-gateway/Dockerfile
     container_name: ciblorgasport-api-gateway
     ports:
-      - "80:80"
+      - "8080:80"
     depends_on:
       auth-service:
         condition: service_started

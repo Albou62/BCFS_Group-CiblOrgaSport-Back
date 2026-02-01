@@ -66,23 +66,32 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("*"));
-        configuration.setAllowedOrigins(List.of(
-            "http://localhost:1002",
-            "http://localhost:80",
-            "https://bcfs-group-ciblorgasport-front.onrender.com" 
+        
+        // 1. On définit les origines autorisées
+        // IMPORTANT : Ne mettez pas "*" si setAllowCredentials est à true
+        configuration.setAllowedOrigins(Arrays.asList(
+            "http://localhost:1002",  // Votre Front-End
+            "http://localhost:8080",  // La Gateway (Indispensable !)
+            "http://localhost"        // Sécurité supplémentaire
         ));
         
+        // 2. Méthodes autorisées
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept"));
+        
+        // 3. En-têtes autorisés
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers"));
+        
+        // 4. En-têtes exposés au front (pour lire le token par exemple)
         configuration.setExposedHeaders(Arrays.asList("Authorization"));
-        configuration.setAllowCredentials(false); // Set to true if using credentials
+        
+        // 5. IMPORTANT : Autoriser les credentials (cookies/headers d'auth)
+        configuration.setAllowCredentials(true); 
         
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
-
+    
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config)
             throws Exception {

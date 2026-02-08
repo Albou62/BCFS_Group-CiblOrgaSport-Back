@@ -18,7 +18,7 @@ services:
   auth-service:
     build:
       context: .
-      dockerfile: auth-service/Dockerfile        # renomme ton Dockerfile actuel en Dockerfile-auth
+      dockerfile: auth-service/Dockerfile
     container_name: ciblorgasport-auth
     environment:
       SPRING_PROFILES_ACTIVE: docker
@@ -46,6 +46,41 @@ services:
         condition: service_healthy
     networks:
       - ciblorgasport
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: notification-service/Dockerfile
+    container_name: ciblorgasport-notification
+    environment:
+      DATASOURCE_URL: jdbc:postgresql://db:5432/glop
+      DATASOURCE_USERNAME: admin
+      DATASOURCE_PASSWORD: password
+      KAFKA_URL: CONTROLLER://localhost:9091,HOST://0.0.0.0:9092,DOCKER://0.0.0.0:9093
+    depends_on:
+      kafka:
+        condition: service_started
+      auth-service:
+        condition: service_started
+      competition-service:
+        condition: service_started
+    networks:
+      - ciblorgasport
+
+  kafka:
+    image: apache/kafka-native
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_LISTENERS: CONTROLLER://localhost:9091,HOST://0.0.0.0:9092,DOCKER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: HOST://localhost:9092,DOCKER://kafka:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,DOCKER:PLAINTEXT,HOST:PLAINTEXT
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9091
+      KAFKA_INTER_BROKER_LISTENER_NAME: DOCKER
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 
   prometheus:
     image: prom/prometheus

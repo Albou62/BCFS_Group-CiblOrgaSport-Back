@@ -1,22 +1,19 @@
-package main.java.com.ciblorgasport.notifications.serverHandlers;
+package com.ciblorgasport.notifications.serverHandlers;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.stream.Collectors;
-import main.java.com.ciblorgasport.notifications.utils.Utils;
+import com.ciblorgasport.notifications.utils.Utils;
 
 import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
 
-public class NotificationHandler {
+public class NotificationHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange exchange) throws IOException {
-        if ("OPTIONS".equals(exchange.getRequestMethod())) {
-            handleOptions(exchange);
-        } else if ("POST".equals(exchange.getRequestMethod())) {
+        if ("POST".equals(exchange.getRequestMethod())) {
             handlePostRequest(exchange);
         } else if ("GET".equals(exchange.getRequestMethod())) {
             handleGetRequest(exchange);
@@ -24,9 +21,9 @@ public class NotificationHandler {
     }
 
     private void handlePostRequest(HttpExchange exchange) {
-        String requestBody = Utils.getRequestBody(exchange);
-        JSONObject jsonObject = new JSONObject(requestBody);
         try {
+            String requestBody = Utils.getRequestBody(exchange);
+            JSONObject jsonObject = new JSONObject(requestBody);
             String groupId = jsonObject.getString("groupId");
             String label = jsonObject.getString("label");
             String impactLevel = jsonObject.getString("impactLevel");
@@ -34,23 +31,25 @@ public class NotificationHandler {
             // Kafka Producer Operation
         } catch(JSONException e) {
             byte[] bytes = "Bad request".getBytes(StandardCharsets.UTF_8);
-            exchange.sendResponseHeaders(400, bytes);
-            exchange.getResponseBody().write(bytes);
-            exchange.getResponseBody().close();
+            Utils.sendErrorResponse(exchange, bytes, 400);
+        } catch (IOException e) {
+            byte[] bytes = "Internal server error".getBytes(StandardCharsets.UTF_8);
+            Utils.sendErrorResponse(exchange, bytes, 500);
         }
     }
 
     private void handleGetRequest(HttpExchange exchange) {
-        String requestBody = Utils.getRequestBody(exchange);
-        JSONObject jsonObject = new JSONObject(requestBody);
         try {
+            String requestBody = Utils.getRequestBody(exchange);
+            JSONObject jsonObject = new JSONObject(requestBody);
             String userId = jsonObject.getString("userId");
             // Kafka Consumer Operation
         } catch(JSONException e) {
             byte[] bytes = "Bad request".getBytes(StandardCharsets.UTF_8);
-            exchange.sendResponseHeaders(400, bytes);
-            exchange.getResponseBody().write(bytes);
-            exchange.getResponseBody().close();
+            Utils.sendErrorResponse(exchange, bytes, 400);
+        } catch (IOException e) {
+            byte[] bytes = "Internal server error".getBytes(StandardCharsets.UTF_8);
+            Utils.sendErrorResponse(exchange, bytes, 500);
         }
     }
 }

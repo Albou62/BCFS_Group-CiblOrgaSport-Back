@@ -1,21 +1,27 @@
-package main.java.com.ciblorgasport.notifications;
+package com.ciblorgasport.notifications;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 
-import com.sun.net.httpserver.HttpHandler;
+import com.ciblorgasport.notifications.serverHandlers.NotificationHandler;
+import com.ciblorgasport.notifications.serverHandlers.SubscriptionHandler;
 import com.sun.net.httpserver.HttpServer;
 
 public class Server {
     
     public void start() {
-        HttpServer server = HttpServer.create(
-            new InetSocketAddress("localhost", 8080), 0
-        );
-        server.createContext("/subscription", new SubscriptionHandler());
-        server.createContext("/notification", new NotificationHandler());
+        try {
+            HttpServer server = HttpServer.create(
+                new InetSocketAddress("localhost", 8080), 0
+            );
+            server.createContext("/subscription", new SubscriptionHandler());
+            server.createContext("/notification", new NotificationHandler());
 
-        server.setExecutor(null);
-        server.start();
+            server.setExecutor(null);
+            server.start();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
 }

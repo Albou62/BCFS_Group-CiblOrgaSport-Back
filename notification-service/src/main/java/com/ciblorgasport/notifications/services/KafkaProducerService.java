@@ -1,4 +1,4 @@
-package main.java.com.ciblorgasport.notifications.services;
+package com.ciblorgasport.notifications.services;
 
 public class KafkaProducerService {
     

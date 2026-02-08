@@ -3,6 +3,7 @@ package com.ciblorgasport.notifications;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
+import com.ciblorgasport.notifications.serverHandlers.GroupHandler;
 import com.ciblorgasport.notifications.serverHandlers.NotificationHandler;
 import com.ciblorgasport.notifications.serverHandlers.SubscriptionHandler;
 import com.sun.net.httpserver.HttpServer;
@@ -16,6 +17,7 @@ public class Server {
             );
             server.createContext("/subscription", new SubscriptionHandler());
             server.createContext("/notification", new NotificationHandler());
+            server.createContext("/group", new GroupHandler());
 
             server.setExecutor(null);
             server.start();

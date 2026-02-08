@@ -56,6 +56,7 @@ services:
       DATASOURCE_URL: jdbc:postgresql://db:5432/glop
       DATASOURCE_USERNAME: admin
       DATASOURCE_PASSWORD: password
+      KAFKA_URL: CONTROLLER://localhost:9091,HOST://0.0.0.0:9092,DOCKER://0.0.0.0:9093
     depends_on:
       kafka:
         condition: service_started

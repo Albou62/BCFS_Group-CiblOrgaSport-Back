@@ -1,5 +1,24 @@
 # Route configuration:
 
+## /groups
+### GET
+- Returns
+    - 200:
+        - Array of objects:
+            - GroupID
+            - GroupName
+
+### POST
+- RequestBody
+    - id {Long}
+    - name {String}
+
+- Returns
+    - 200:
+        - Group created in Database
+    - 500:
+        - Internal Server Error
+
 ## /subscription
 ### GET
 - RequestBody:
@@ -8,7 +27,7 @@
 - Returns:
     - 200:
         - Array of objects:
-            - GroupID {String, UUID Format}
+            - GroupID {Long}
             - GroupName {String}
             - SubscriptionDate {String, Date Format}
     - 404:
@@ -18,8 +37,8 @@
 
 ### POST
 - RequestBody
-    - UserID {String, UUID Format}
-    - GroupID {String, UUID Format}
+    - UserID {Long}
+    - GroupID {Long}
 
 - Returns
     - 202:
@@ -31,8 +50,8 @@
 
 ### DELETE
 - RequestBody
-    - UserID {String, UUID Format}
-    - GroupID {String, UUID Format}
+    - UserID {Long}
+    - GroupID {Long}
 
 - Returns
     - 200:
@@ -50,7 +69,7 @@
 - Returns:
     - 200:
         - Array of objects:
-            - ID {String, UUID}
+            - ID {Long}
             - Date {String, Date Format}
             - Group {String}
             - Label {String}
@@ -62,7 +81,7 @@
 
 ### POST
 - RequestBody:
-    - GroupID {String, UUID Format}
+    - GroupID {Long}
     - Label {String}
     - ImpactLevel {String}
 

@@ -3,6 +3,7 @@ package com.ciblorgasport.notifications.serverHandlers;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
+import java.util.Date;
 import java.util.List;
 
 import org.json.JSONArray;
@@ -11,11 +12,11 @@ import org.json.JSONObject;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
+import com.ciblorgasport.notifications.models.SubscriptionTableRow;
 import com.ciblorgasport.notifications.services.DatabaseService;
 import com.ciblorgasport.notifications.utils.Utils;
 
 public class SubscriptionHandler implements HttpHandler {
-
     DatabaseService dbService = new DatabaseService();
 
     @Override
@@ -33,16 +34,17 @@ public class SubscriptionHandler implements HttpHandler {
         try {
             String requestBody = Utils.getRequestBody(exchange);
             JSONObject jsonObject = new JSONObject(requestBody);
-            String groupId = jsonObject.getString("groupId");
-            String userId = jsonObject.getString("userId");
-            // Add subscription to database
+            Long groupId = jsonObject.getLong("groupId");
+            Long userId = jsonObject.getLong("userId");
+            String curTime = new Date().toString();
+            this.dbService.insertUserInGroup(userId, groupId, curTime);
         } catch(JSONException e) {
             byte[] bytes = "Bad request".getBytes(StandardCharsets.UTF_8);
-            Utils.sendErrorResponse(exchange, bytes, 400);
-        } catch (IOException e) {
+            Utils.sendResponse(exchange, bytes, 400);
+        } catch (IOException | SQLException e) {
             e.printStackTrace();
             byte[] bytes = "Internal server error".getBytes(StandardCharsets.UTF_8);
-            Utils.sendErrorResponse(exchange, bytes, 500);
+            Utils.sendResponse(exchange, bytes, 500);
         }
     }
 
@@ -50,23 +52,23 @@ public class SubscriptionHandler implements HttpHandler {
         try {
             String requestBody = Utils.getRequestBody(exchange);
             JSONObject jsonObject = new JSONObject(requestBody);
-            String userId = jsonObject.getString("userId");
-            List<String> groups = this.dbService.getGroupsByUser(userId);
+            Long userId = jsonObject.getLong("userId");
+            List<SubscriptionTableRow> groups = this.dbService.getGroupsByUser(userId);
             JSONArray responseArray = new JSONArray();
-            for (String groupJson : groups) {
-                responseArray.put(new JSONObject(groupJson));
+            for (SubscriptionTableRow curSub : groups) {
+                JSONObject groupJson = curSub.toJson();
+                String groupName = this.dbService.getGroupName(curSub.getGroupId());
+                groupJson.put("groupName", groupName);
+                responseArray.put(groupJson);
             }
             byte[] responseBytes = responseArray.toString().getBytes(StandardCharsets.UTF_8);
-            exchange.getResponseHeaders().add("Content-Type", "application/json");
-            exchange.sendResponseHeaders(200, responseBytes.length);
-            exchange.getResponseBody().write(responseBytes);
-            exchange.close();
+            Utils.sendResponse(exchange, responseBytes, 200);
         } catch(JSONException e) {
             byte[] bytes = "Bad request".getBytes(StandardCharsets.UTF_8);
-            Utils.sendErrorResponse(exchange, bytes, 400);
+            Utils.sendResponse(exchange, bytes, 400);
         } catch (IOException | SQLException e) {
             byte[] bytes = "Internal server error".getBytes(StandardCharsets.UTF_8);
-            Utils.sendErrorResponse(exchange, bytes, 500);
+            Utils.sendResponse(exchange, bytes, 500);
         }
     }
 
@@ -74,15 +76,15 @@ public class SubscriptionHandler implements HttpHandler {
         try {
             String requestBody = Utils.getRequestBody(exchange);
             JSONObject jsonObject = new JSONObject(requestBody);
-            String userId = jsonObject.getString("userId");
-            String groupId = jsonObject.getString("groupId");
-            // Delete subscriptions in database
+            Long userId = jsonObject.getLong("userId");
+            Long groupId = jsonObject.getLong("groupId");
+            this.dbService.deleteUserFromGroup(groupId, userId);
         } catch(JSONException e) {
             byte[] bytes = "Bad request".getBytes(StandardCharsets.UTF_8);
-            Utils.sendErrorResponse(exchange, bytes, 400);
-        } catch (IOException e) {
+            Utils.sendResponse(exchange, bytes, 400);
+        } catch (IOException | SQLException e) {
             byte[] bytes = "Internal server error".getBytes(StandardCharsets.UTF_8);
-            Utils.sendErrorResponse(exchange, bytes, 500);
+            Utils.sendResponse(exchange, bytes, 500);
         }
     }
 }

@@ -6,6 +6,8 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.stream.Collectors;
 
+import org.json.JSONArray;
+
 import com.sun.net.httpserver.HttpExchange;
 
 public class Utils {
@@ -15,9 +17,10 @@ public class Utils {
         return requestBody;
     }
 
-    public static void sendErrorResponse(HttpExchange exchange, byte[] bytes, int statusCode) {
+    public static void sendResponse(HttpExchange exchange, byte[] bytes, int statusCode) {
         try {
-            exchange.sendResponseHeaders(400, bytes.length);
+            exchange.getResponseHeaders().add("Content-Type", "application/json");
+            exchange.sendResponseHeaders(statusCode, bytes.length);
             exchange.getResponseBody().write(bytes);
             exchange.getResponseBody().close();
         } catch (IOException e) {

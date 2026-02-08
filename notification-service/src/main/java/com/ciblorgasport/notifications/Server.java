@@ -21,6 +21,7 @@ public class Server {
 
             server.setExecutor(null);
             server.start();
+            System.out.println("Server is running");
         } catch (IOException e) {
             e.printStackTrace();
         }

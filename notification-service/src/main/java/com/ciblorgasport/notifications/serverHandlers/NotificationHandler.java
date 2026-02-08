@@ -6,9 +6,12 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
+import java.util.Date;
 import java.util.List;
 
 import com.ciblorgasport.notifications.services.DatabaseService;
+import com.ciblorgasport.notifications.services.KafkaConsumerService;
+import com.ciblorgasport.notifications.services.KafkaProducerService;
 import com.ciblorgasport.notifications.utils.Utils;
 
 import com.sun.net.httpserver.HttpExchange;
@@ -34,7 +37,12 @@ public class NotificationHandler implements HttpHandler {
             String label = jsonObject.getString("label");
             String impactLevel = jsonObject.getString("impactLevel");
             List<Long> subscribedUsers = this.dbService.getUsersByGroup(groupId);
-            // Kafka Producer Operation
+            KafkaProducerService producerService = new KafkaProducerService();
+            for(Long subscriber : subscribedUsers) {
+                producerService.sendMessage(subscriber, groupId, label);
+            }
+            Date curDate = new Date();
+            this.dbService.addNotificationToHistory(groupId, label, impactLevel, curDate.toString());
         } catch(JSONException e) {
             byte[] bytes = "Bad request".getBytes(StandardCharsets.UTF_8);
             Utils.sendResponse(exchange, bytes, 400);
@@ -49,7 +57,9 @@ public class NotificationHandler implements HttpHandler {
             String requestBody = Utils.getRequestBody(exchange);
             JSONObject jsonObject = new JSONObject(requestBody);
             String userId = jsonObject.getString("userId");
-            // Kafka Consumer Operation
+            KafkaConsumerService consumerService = new KafkaConsumerService(userId);
+            byte[] notifs = consumerService.getNotifs().toString().getBytes(StandardCharsets.UTF_8);
+            Utils.sendResponse(exchange, notifs, 200);
         } catch(JSONException e) {
             byte[] bytes = "Bad request".getBytes(StandardCharsets.UTF_8);
             Utils.sendResponse(exchange, bytes, 400);

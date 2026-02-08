@@ -19,6 +19,7 @@ public class DatabaseService {
     public static final String INSERT_NEW_GROUP = "INSERT INTO groups VALUES (?, ?)";
     public static final String INSERT_USER_GROUP_ABONNEMENTS = "INSERT INTO abonnements VALUES (?, ?, ?);";
     public static final String DELETE_USER_FROM_GROUP = "DELETE FROM abonnements WHERE groupId == ? AND userId == ?;";
+    public static final String ADD_NOTIFICATION_TO_HISTORY = "INSERT INTO notifs VALUES (?, ?, ?, ?)";
 
     private String url;
     private String username;
@@ -126,11 +127,22 @@ public class DatabaseService {
 
     public void deleteUserFromGroup(Long groupId, Long userId) throws SQLException {
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(DELETE_USER_FROM_GROUP)) {
+            PreparedStatement stmt = conn.prepareStatement(DELETE_USER_FROM_GROUP)) {
 
             stmt.setLong(1, groupId);
             stmt.setLong(2, userId);
             stmt.executeQuery();
+        }
+    }
+
+    public void addNotificationToHistory(Long groupId, String label, String impactLevel, String date) throws SQLException {
+        try (Connection conn = getConnection();
+            PreparedStatement stmt = conn.prepareStatement(ADD_NOTIFICATION_TO_HISTORY)) {
+            
+            stmt.setLong(1, groupId);
+            stmt.setString(2, label);
+            stmt.setString(3, impactLevel);
+            stmt.setString(4, date);
         }
     }
 }

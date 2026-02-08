@@ -5,10 +5,12 @@ import java.util.Properties;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 public class KafkaConsumerService {
     private KafkaConsumer<String, String> consumer;
+    JSONArray notifs = new JSONArray();
 
     public KafkaConsumerService(String topic) {
         Properties props = new Properties();
@@ -30,6 +32,7 @@ public class KafkaConsumerService {
                     if (!records.isEmpty()) {
                         for (ConsumerRecord<String, String> record : records) {
                             JSONObject json = new JSONObject(record.value());
+                            this.notifs.put(json);
                         }
                     } else {
                         consumer.close();
@@ -43,4 +46,6 @@ public class KafkaConsumerService {
         listenerThread.setDaemon(true);
         listenerThread.start();
     }
+
+    public JSONArray getNotifs() { return this.notifs; }
 }

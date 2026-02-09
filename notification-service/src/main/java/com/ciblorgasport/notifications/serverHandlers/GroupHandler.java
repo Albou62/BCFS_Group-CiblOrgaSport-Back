@@ -31,14 +31,15 @@ public class GroupHandler implements HttpHandler {
         try {
             String requestBody = Utils.getRequestBody(exchange);
             JSONObject jsonObject = new JSONObject(requestBody);
-            Long groupId = jsonObject.getLong("id");
             String groupName = jsonObject.getString("name");
-            this.dbService.insertNewGroup(groupId, groupName);
+            this.dbService.insertNewGroup(groupName);
             Utils.sendResponse(exchange, "".getBytes(), 200);
         } catch(JSONException e) {
+            System.out.println(e);
             byte[] bytes = "Bad request".getBytes(StandardCharsets.UTF_8);
             Utils.sendResponse(exchange, bytes, 400);
         } catch (IOException | SQLException e) {
+            System.out.println(e);
             byte[] bytes = "Internal server error".getBytes(StandardCharsets.UTF_8);
             Utils.sendResponse(exchange, bytes, 500);
         }
@@ -54,9 +55,11 @@ public class GroupHandler implements HttpHandler {
             }
             Utils.sendResponse(exchange, arr.toString().getBytes(), 200);
         } catch(JSONException e) {
+            e.printStackTrace();
             byte[] bytes = "Bad request".getBytes(StandardCharsets.UTF_8);
             Utils.sendResponse(exchange, bytes, 400);
         } catch (SQLException e) {
+            e.printStackTrace();
             byte[] bytes = "Internal server error".getBytes(StandardCharsets.UTF_8);
             Utils.sendResponse(exchange, bytes, 500);
         }

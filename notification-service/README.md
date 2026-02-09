@@ -10,7 +10,6 @@
 
 ### POST
 - RequestBody
-    - id {Long}
     - name {String}
 
 - Returns
@@ -64,7 +63,7 @@
 ## /notification
 ### GET
 - RequestBody:
-    - UserID {String, UUID Format}
+    - UserID {Long}
 
 - Returns:
     - 200:

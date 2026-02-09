@@ -39,14 +39,19 @@ public class NotificationHandler implements HttpHandler {
             List<Long> subscribedUsers = this.dbService.getUsersByGroup(groupId);
             KafkaProducerService producerService = new KafkaProducerService();
             for(Long subscriber : subscribedUsers) {
-                producerService.sendMessage(subscriber, groupId, label);
+                System.out.println(subscriber);
+                producerService.sendMessage(subscriber.toString(), groupId, label);
             }
             Date curDate = new Date();
             this.dbService.addNotificationToHistory(groupId, label, impactLevel, curDate.toString());
+            byte[] ok = "OK".getBytes();
+            Utils.sendResponse(exchange, ok, 200);
         } catch(JSONException e) {
+            e.printStackTrace();
             byte[] bytes = "Bad request".getBytes(StandardCharsets.UTF_8);
             Utils.sendResponse(exchange, bytes, 400);
         } catch (IOException | SQLException e) {
+            e.printStackTrace();
             byte[] bytes = "Internal server error".getBytes(StandardCharsets.UTF_8);
             Utils.sendResponse(exchange, bytes, 500);
         }
@@ -56,14 +61,16 @@ public class NotificationHandler implements HttpHandler {
         try {
             String requestBody = Utils.getRequestBody(exchange);
             JSONObject jsonObject = new JSONObject(requestBody);
-            String userId = jsonObject.getString("userId");
-            KafkaConsumerService consumerService = new KafkaConsumerService(userId);
+            Long userId = jsonObject.getLong("userId");
+            KafkaConsumerService consumerService = new KafkaConsumerService(userId.toString());
             byte[] notifs = consumerService.getNotifs().toString().getBytes(StandardCharsets.UTF_8);
             Utils.sendResponse(exchange, notifs, 200);
         } catch(JSONException e) {
+            e.printStackTrace();
             byte[] bytes = "Bad request".getBytes(StandardCharsets.UTF_8);
             Utils.sendResponse(exchange, bytes, 400);
         } catch (IOException e) {
+            e.printStackTrace();
             byte[] bytes = "Internal server error".getBytes(StandardCharsets.UTF_8);
             Utils.sendResponse(exchange, bytes, 500);
         }

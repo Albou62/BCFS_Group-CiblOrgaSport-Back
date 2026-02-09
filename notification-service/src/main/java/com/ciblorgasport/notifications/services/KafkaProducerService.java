@@ -1,12 +1,10 @@
 package com.ciblorgasport.notifications.services;
 
 import java.util.Properties;
-import java.util.concurrent.Future;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.serialization.StringSerializer;
 
 public class KafkaProducerService {
@@ -18,21 +16,27 @@ public class KafkaProducerService {
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         props.put(ProducerConfig.ACKS_CONFIG, "1");
+
+        props.put("allow.auto.create.topics", "true");
         
         this.producer = new KafkaProducer<>(props);
     }
 
-    public void sendMessage(long userTopic, long groupId, String label) {
+    public void sendMessage(String userTopic, long groupId, String label) {
         try {
-            String topicName = String.valueOf(userTopic);
             String key = String.valueOf(groupId);
+            System.out.println(""+userTopic+" "+groupId+" "+label);
             
             ProducerRecord<String, String> record = 
-                new ProducerRecord<>(topicName, key, label);
+                new ProducerRecord<>(userTopic, key, label);
             
-            Future<RecordMetadata> future = producer.send(record);
-            RecordMetadata metadata = future.get();
-            System.out.println("Partition: " + metadata.partition() + ",Offset: " + metadata.offset());
+            producer.send(record, (metadata, exception) -> {
+                if (exception != null) {
+                    System.err.println("Send failed: " + exception.getMessage());
+                } else {
+                    System.out.println("Sent to partition " + metadata.partition());
+                }
+            });
         } catch (Exception e) {
             e.printStackTrace();
         }

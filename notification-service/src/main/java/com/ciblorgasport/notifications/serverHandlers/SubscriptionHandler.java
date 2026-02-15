@@ -38,7 +38,9 @@ public class SubscriptionHandler implements HttpHandler {
             Long userId = jsonObject.getLong("userId");
             String curTime = new Date().toString();
             this.dbService.insertUserInGroup(userId, groupId, curTime);
+            Utils.sendResponse(exchange, "".getBytes(), 200);
         } catch(JSONException e) {
+            e.printStackTrace();
             byte[] bytes = "Bad request".getBytes(StandardCharsets.UTF_8);
             Utils.sendResponse(exchange, bytes, 400);
         } catch (IOException | SQLException e) {
@@ -64,9 +66,11 @@ public class SubscriptionHandler implements HttpHandler {
             byte[] responseBytes = responseArray.toString().getBytes(StandardCharsets.UTF_8);
             Utils.sendResponse(exchange, responseBytes, 200);
         } catch(JSONException e) {
+            e.printStackTrace();
             byte[] bytes = "Bad request".getBytes(StandardCharsets.UTF_8);
             Utils.sendResponse(exchange, bytes, 400);
         } catch (IOException | SQLException e) {
+            e.printStackTrace();
             byte[] bytes = "Internal server error".getBytes(StandardCharsets.UTF_8);
             Utils.sendResponse(exchange, bytes, 500);
         }
@@ -79,10 +83,14 @@ public class SubscriptionHandler implements HttpHandler {
             Long userId = jsonObject.getLong("userId");
             Long groupId = jsonObject.getLong("groupId");
             this.dbService.deleteUserFromGroup(groupId, userId);
+            byte[] ok = "OK".getBytes();
+            Utils.sendResponse(exchange, ok, 200);
         } catch(JSONException e) {
+            e.printStackTrace();
             byte[] bytes = "Bad request".getBytes(StandardCharsets.UTF_8);
             Utils.sendResponse(exchange, bytes, 400);
         } catch (IOException | SQLException e) {
+            e.printStackTrace();
             byte[] bytes = "Internal server error".getBytes(StandardCharsets.UTF_8);
             Utils.sendResponse(exchange, bytes, 500);
         }

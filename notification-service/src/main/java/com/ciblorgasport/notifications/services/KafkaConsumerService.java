@@ -3,6 +3,7 @@ package com.ciblorgasport.notifications.services;
 import java.time.Duration;
 import java.util.Properties;
 import java.util.Collections;
+import java.util.concurrent.CountDownLatch;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -15,17 +16,17 @@ public class KafkaConsumerService {
     private KafkaConsumer<String, String> consumer;
     private JSONArray notifs = new JSONArray();
     private volatile boolean running = true;
+    private CountDownLatch messagesReceivedLatch = new CountDownLatch(1);
 
     public KafkaConsumerService(String topic) {
         Properties props = new Properties();
-        // Use same bootstrap server as producer
-        props.put("bootstrap.servers", "kafka:9092"); 
-        // Fixed group ID
-        props.put("group.id", "tcp-service-group");
+        props.put("bootstrap.servers", "kafka:9092");
+        props.put("group.id", "tcp-service-group-" + System.currentTimeMillis());
         props.put("key.deserializer", StringDeserializer.class.getName());
         props.put("value.deserializer", StringDeserializer.class.getName());
-        props.put("auto.offset.reset", "latest");
+        props.put("auto.offset.reset", "earliest");
         props.put("enable.auto.commit", "true");
+        props.put("max.poll.records", "100");
         
         this.consumer = new KafkaConsumer<>(props);
         startListening(topic);
@@ -34,8 +35,8 @@ public class KafkaConsumerService {
     private void startListening(String topic) {
         Thread listenerThread = new Thread(() -> {
             try {
-                // Subscribe to topic
                 consumer.subscribe(Collections.singletonList(topic));
+                System.out.println("Subscribed to topic: " + topic);
                 
                 while (running) {
                     ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(1000));
@@ -48,8 +49,9 @@ public class KafkaConsumerService {
                                 this.notifs.put(json);
                             }
                         }
+                        // Signal that we've received messages
+                        messagesReceivedLatch.countDown();
                     }
-                    // Don't close consumer on empty poll!
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -62,7 +64,14 @@ public class KafkaConsumerService {
         listenerThread.start();
     }
 
-    public JSONArray getNotifs() { 
+    public JSONArray getNotifs(long timeoutMillis) { 
+        try {
+            // Wait for messages to be received
+            messagesReceivedLatch.await(timeoutMillis, java.util.concurrent.TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        
         synchronized(notifs) {
             return new JSONArray(this.notifs.toString());
         }

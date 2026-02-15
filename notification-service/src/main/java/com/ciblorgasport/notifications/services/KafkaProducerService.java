@@ -9,35 +9,47 @@ import org.apache.kafka.common.serialization.StringSerializer;
 
 public class KafkaProducerService {
     private KafkaProducer<String, String> producer;
+    private Properties props;
 
     public KafkaProducerService() {
-        Properties props = new Properties();
-        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "kafka:9092");
-        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
-        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
-        props.put(ProducerConfig.ACKS_CONFIG, "1");
-
-        props.put("allow.auto.create.topics", "true");
+        this.props = new Properties();
+        // kafka:9093 pour communication sur Docker
+        String bootstrapServers = "kafka:9093"; // Try both 9092 and 9093
+        this.props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        System.out.println("Connecting to Kafka at: " + bootstrapServers);
+        this.props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        this.props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        this.props.put(ProducerConfig.ACKS_CONFIG, "1");
+        this.props.put("allow.auto.create.topics", "true");
         
-        this.producer = new KafkaProducer<>(props);
+        try {
+            this.producer = new KafkaProducer<>(this.props);
+            System.out.println("Kafka producer created successfully");
+        } catch (Exception e) {
+            System.err.println("Failed to create Kafka producer: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     public void sendMessage(String userTopic, long groupId, String label) {
         try {
             String key = String.valueOf(groupId);
-            System.out.println(""+userTopic+" "+groupId+" "+label);
+            System.out.println("Attempting to send to topic: " + userTopic);
+            System.out.println("Bootstrap servers: " + this.props.get(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG));
             
             ProducerRecord<String, String> record = 
                 new ProducerRecord<>(userTopic, key, label);
             
-            producer.send(record, (metadata, exception) -> {
-                if (exception != null) {
-                    System.err.println("Send failed: " + exception.getMessage());
-                } else {
-                    System.out.println("Sent to partition " + metadata.partition());
-                }
-            });
+            // Synchronous send for debugging
+            var future = producer.send(record);
+            var metadata = future.get(); // This will block and throw if there's an error
+            
+            System.out.println("Success! Sent to topic " + metadata.topic() + 
+                " partition " + metadata.partition() + 
+                " at offset " + metadata.offset());
+                
         } catch (Exception e) {
+            System.err.println("Send failed: " + e.getMessage());
             e.printStackTrace();
         }
     }

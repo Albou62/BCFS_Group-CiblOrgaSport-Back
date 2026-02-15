@@ -1,5 +1,6 @@
 package com.ciblorgasport.notifications.serverHandlers;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -62,9 +63,15 @@ public class NotificationHandler implements HttpHandler {
             String requestBody = Utils.getRequestBody(exchange);
             JSONObject jsonObject = new JSONObject(requestBody);
             Long userId = jsonObject.getLong("userId");
+            
             KafkaConsumerService consumerService = new KafkaConsumerService(userId.toString());
-            byte[] notifs = consumerService.getNotifs().toString().getBytes(StandardCharsets.UTF_8);
-            Utils.sendResponse(exchange, notifs, 200);
+            
+            // Wait up to 5 seconds for messages
+            JSONArray notifs = consumerService.getNotifs(5000);
+            
+            byte[] response = notifs.toString().getBytes(StandardCharsets.UTF_8);
+            Utils.sendResponse(exchange, response, 200);
+            
         } catch(JSONException e) {
             e.printStackTrace();
             byte[] bytes = "Bad request".getBytes(StandardCharsets.UTF_8);

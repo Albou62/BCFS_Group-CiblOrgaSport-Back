@@ -12,6 +12,16 @@ services:
         condition: service_started
       competition-service:
         condition: service_started
+      notification-service:
+        condition: service_started
+      kafka:
+        condition: service_started
+      prometheus:
+        condition: service_started
+      grafana:
+        condition: service_started
+      db:
+        condition: service_healthy
     networks:
       - ciblorgasport
 

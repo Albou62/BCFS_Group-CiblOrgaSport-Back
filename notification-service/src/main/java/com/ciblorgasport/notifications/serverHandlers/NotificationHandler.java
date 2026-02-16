@@ -67,9 +67,9 @@ public class NotificationHandler implements HttpHandler {
             KafkaConsumerService consumerService = new KafkaConsumerService(userId.toString());
             
             // Wait up to 5 seconds for messages
-            JSONArray notifs = consumerService.getNotifs(5000);
+            JSONArray messages = consumerService.getMessagesAsJson(5000);
             
-            byte[] response = notifs.toString().getBytes(StandardCharsets.UTF_8);
+            byte[] response = messages.toString().getBytes(StandardCharsets.UTF_8);
             Utils.sendResponse(exchange, response, 200);
             
         } catch(JSONException e) {

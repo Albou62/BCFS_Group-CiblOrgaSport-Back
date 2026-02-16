@@ -2,34 +2,45 @@ package com.ciblorgasport.notifications.services;
 
 import java.time.Duration;
 import java.util.Properties;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.json.JSONArray;
-import org.json.JSONObject;
 
 public class KafkaConsumerService {
     private KafkaConsumer<String, String> consumer;
-    private JSONArray notifs = new JSONArray();
+    private List<String> messages = new ArrayList<>();
     private volatile boolean running = true;
     private CountDownLatch messagesReceivedLatch = new CountDownLatch(1);
+    Properties props;
 
     public KafkaConsumerService(String topic) {
-        Properties props = new Properties();
-        props.put("bootstrap.servers", "kafka:9092");
-        props.put("group.id", "tcp-service-group-" + System.currentTimeMillis());
-        props.put("key.deserializer", StringDeserializer.class.getName());
-        props.put("value.deserializer", StringDeserializer.class.getName());
-        props.put("auto.offset.reset", "earliest");
-        props.put("enable.auto.commit", "true");
-        props.put("max.poll.records", "100");
+        this.props = new Properties();
+        String bootstrapServers = "kafka:9093";
+        this.props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        System.out.println("Connecting to Kafka at: " + bootstrapServers);
+        this.props.put(ConsumerConfig.GROUP_ID_CONFIG, "tcp-service-group-" + System.currentTimeMillis());
+        this.props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+        this.props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+        this.props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        this.props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "true");
+        this.props.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, "100");
         
-        this.consumer = new KafkaConsumer<>(props);
-        startListening(topic);
+        try {
+            this.consumer = new KafkaConsumer<>(this.props);
+            System.out.println("Kafka producer created successfully");
+            startListening(topic);
+        } catch (Exception e) {
+            System.err.println("Failed to create Kafka producer: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
     
     private void startListening(String topic) {
@@ -44,9 +55,8 @@ public class KafkaConsumerService {
                     if (!records.isEmpty()) {
                         for (ConsumerRecord<String, String> record : records) {
                             System.out.println("Received message: " + record.value());
-                            JSONObject json = new JSONObject(record.value());
-                            synchronized(notifs) {
-                                this.notifs.put(json);
+                            synchronized(messages) {
+                                this.messages.add(record.value());  // Store as string
                             }
                         }
                         // Signal that we've received messages
@@ -64,7 +74,7 @@ public class KafkaConsumerService {
         listenerThread.start();
     }
 
-    public JSONArray getNotifs(long timeoutMillis) { 
+    public JSONArray getMessagesAsJson(long timeoutMillis) { 
         try {
             // Wait for messages to be received
             messagesReceivedLatch.await(timeoutMillis, java.util.concurrent.TimeUnit.MILLISECONDS);
@@ -72,8 +82,25 @@ public class KafkaConsumerService {
             Thread.currentThread().interrupt();
         }
         
-        synchronized(notifs) {
-            return new JSONArray(this.notifs.toString());
+        synchronized(messages) {
+            // Convert strings to JSONArray
+            JSONArray jsonArray = new JSONArray();
+            for (String msg : messages) {
+                jsonArray.put(msg);  // This will create a JSON array of strings
+            }
+            return jsonArray;
+        }
+    }
+    
+    public List<String> getMessages(long timeoutMillis) {
+        try {
+            messagesReceivedLatch.await(timeoutMillis, java.util.concurrent.TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        
+        synchronized(messages) {
+            return new ArrayList<>(messages);  // Return a copy
         }
     }
     

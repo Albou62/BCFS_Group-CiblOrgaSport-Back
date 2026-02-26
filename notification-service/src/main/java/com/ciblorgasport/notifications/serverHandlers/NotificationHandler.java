@@ -9,6 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 import com.ciblorgasport.notifications.services.DatabaseService;
 import com.ciblorgasport.notifications.services.KafkaConsumerService;
@@ -59,27 +60,30 @@ public class NotificationHandler implements HttpHandler {
     }
 
     private void handleGetRequest(HttpExchange exchange) {
-        try {
-            String requestBody = Utils.getRequestBody(exchange);
-            JSONObject jsonObject = new JSONObject(requestBody);
-            Long userId = jsonObject.getLong("userId");
-            
-            KafkaConsumerService consumerService = new KafkaConsumerService(userId.toString());
-            
-            // Wait up to 5 seconds for messages
-            JSONArray messages = consumerService.getMessagesAsJson(5000);
-            
-            byte[] response = messages.toString().getBytes(StandardCharsets.UTF_8);
-            Utils.sendResponse(exchange, response, 200);
-            
-        } catch(JSONException e) {
-            e.printStackTrace();
-            byte[] bytes = "Bad request".getBytes(StandardCharsets.UTF_8);
-            Utils.sendResponse(exchange, bytes, 400);
-        } catch (IOException e) {
-            e.printStackTrace();
-            byte[] bytes = "Internal server error".getBytes(StandardCharsets.UTF_8);
-            Utils.sendResponse(exchange, bytes, 500);
+        // Parse query parameters
+        String query = exchange.getRequestURI().getQuery();
+        if (query == null) {
+            Utils.sendResponse(exchange, "Missing userId parameter".getBytes(StandardCharsets.UTF_8), 400);
+            return;
         }
+        Map<String, String> params = Utils.parseQueryParams(query);
+        String userIdStr = params.get("userId");
+        if (userIdStr == null) {
+            Utils.sendResponse(exchange, "Missing userId parameter".getBytes(StandardCharsets.UTF_8), 400);
+            return;
+        }
+        Long userId;
+        try {
+            userId = Long.parseLong(userIdStr);
+        } catch (NumberFormatException e) {
+            Utils.sendResponse(exchange, "Invalid userId format".getBytes(StandardCharsets.UTF_8), 400);
+            return;
+        }
+
+        // Consume Kafka messages for the user
+        KafkaConsumerService consumerService = new KafkaConsumerService(userId.toString());
+        JSONArray messages = consumerService.getMessagesAsJson(5000); // Wait up to 5 seconds
+        byte[] response = messages.toString().getBytes(StandardCharsets.UTF_8);
+        Utils.sendResponse(exchange, response, 200);
     }
 }

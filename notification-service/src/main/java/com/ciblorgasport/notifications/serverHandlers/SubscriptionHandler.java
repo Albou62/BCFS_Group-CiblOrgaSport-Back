@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -52,9 +53,32 @@ public class SubscriptionHandler implements HttpHandler {
 
     private void handleGetRequest(HttpExchange exchange) {
         try {
-            String requestBody = Utils.getRequestBody(exchange);
-            JSONObject jsonObject = new JSONObject(requestBody);
-            Long userId = jsonObject.getLong("userId");
+            // DON'T try to read the request body for GET requests!
+            // String requestBody = Utils.getRequestBody(exchange); // REMOVE THIS LINE
+            
+            // Parse query parameters from the URL
+            String query = exchange.getRequestURI().getQuery();
+            if (query == null || query.isEmpty()) {
+                Utils.sendResponse(exchange, "Missing query parameters".getBytes(StandardCharsets.UTF_8), 400);
+                return;
+            }
+            
+            Map<String, String> params = Utils.parseQueryParams(query);
+            String userIdStr = params.get("userId");
+            
+            if (userIdStr == null) {
+                Utils.sendResponse(exchange, "Missing userId parameter".getBytes(StandardCharsets.UTF_8), 400);
+                return;
+            }
+            
+            Long userId;
+            try {
+                userId = Long.parseLong(userIdStr);
+            } catch (NumberFormatException e) {
+                Utils.sendResponse(exchange, "Invalid userId format".getBytes(StandardCharsets.UTF_8), 400);
+                return;
+            }
+            
             List<SubscriptionTableRow> groups = this.dbService.getGroupsByUser(userId);
             JSONArray responseArray = new JSONArray();
             for (SubscriptionTableRow curSub : groups) {
@@ -65,11 +89,8 @@ public class SubscriptionHandler implements HttpHandler {
             }
             byte[] responseBytes = responseArray.toString().getBytes(StandardCharsets.UTF_8);
             Utils.sendResponse(exchange, responseBytes, 200);
-        } catch(JSONException e) {
-            e.printStackTrace();
-            byte[] bytes = "Bad request".getBytes(StandardCharsets.UTF_8);
-            Utils.sendResponse(exchange, bytes, 400);
-        } catch (IOException | SQLException e) {
+            
+        } catch (SQLException e) {
             e.printStackTrace();
             byte[] bytes = "Internal server error".getBytes(StandardCharsets.UTF_8);
             Utils.sendResponse(exchange, bytes, 500);

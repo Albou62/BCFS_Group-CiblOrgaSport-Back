@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -16,7 +17,15 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 
 public class GroupHandler implements HttpHandler {
-    DatabaseService dbService = new DatabaseService();
+    private final DatabaseService dbService;
+
+    public GroupHandler() {
+        this(new DatabaseService());
+    }
+
+    public GroupHandler(DatabaseService dbService) {
+        this.dbService = dbService;
+    }
 
     @Override
     public void handle(HttpExchange exchange) throws IOException {
@@ -32,8 +41,8 @@ public class GroupHandler implements HttpHandler {
             String requestBody = Utils.getRequestBody(exchange);
             JSONObject jsonObject = new JSONObject(requestBody);
             String groupName = jsonObject.getString("name");
-            this.dbService.insertNewGroup(groupName);
-            Utils.sendResponse(exchange, "".getBytes(), 200);
+            GroupTableRow group = this.dbService.createGroupIfNotExists(groupName);
+            Utils.sendResponse(exchange, group.toJson().toString().getBytes(StandardCharsets.UTF_8), 200);
         } catch(JSONException e) {
             System.out.println(e);
             byte[] bytes = "Bad request".getBytes(StandardCharsets.UTF_8);
@@ -47,6 +56,21 @@ public class GroupHandler implements HttpHandler {
 
     public void handleGetRequest(HttpExchange exchange) {
         try {
+            String query = exchange.getRequestURI().getQuery();
+            if (query != null && !query.isEmpty()) {
+                Map<String, String> params = Utils.parseQueryParams(query);
+                String groupName = params.get("name");
+                if (groupName != null && !groupName.isBlank()) {
+                    GroupTableRow group = this.dbService.getGroupByName(groupName);
+                    if (group == null) {
+                        Utils.sendResponse(exchange, "{}".getBytes(StandardCharsets.UTF_8), 404);
+                        return;
+                    }
+                    Utils.sendResponse(exchange, group.toJson().toString().getBytes(StandardCharsets.UTF_8), 200);
+                    return;
+                }
+            }
+
             List<GroupTableRow> gtrs = this.dbService.getAllGroups();
             JSONArray arr = new JSONArray();
             for (GroupTableRow gtr : gtrs) {

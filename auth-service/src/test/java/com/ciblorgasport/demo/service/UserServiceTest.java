@@ -2,6 +2,7 @@ package com.ciblorgasport.demo.service;
 
 import com.ciblorgasport.demo.entity.User;
 import com.ciblorgasport.demo.repository.UserRepository;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -11,26 +12,56 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class UserServiceTest {
 
     private final UserRepository userRepository = Mockito.mock(UserRepository.class);
     private final PasswordEncoder passwordEncoder = Mockito.mock(PasswordEncoder.class);
-    private final UserService userService = new UserService(userRepository, passwordEncoder);
+    private final NotificationClient notificationClient = Mockito.mock(NotificationClient.class);
+    private final UserService userService = new UserService(
+            userRepository,
+            passwordEncoder,
+            notificationClient,
+            new SimpleMeterRegistry()
+    );
 
     @Test
     void register_creeUnSpectateurAvecMotDePasseEncode() {
         when(passwordEncoder.encode("pwd")).thenReturn("ENCODED");
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+            User saved = invocation.getArgument(0);
+            saved.setId(42L);
+            return saved;
+        });
+        when(notificationClient.findIncidentGroupId()).thenReturn(7L);
 
         User u = userService.register("alice", "pwd");
 
+        verify(notificationClient).subscribeUserToGroup(42L, 7L);
+        assertEquals(42L, u.getId());
         assertThat(u.getUsername()).isEqualTo("alice");
         assertThat(u.getPassword()).isEqualTo("ENCODED");
         assertThat(u.getRole()).isEqualTo(User.Role.SPECTATEUR);
+    }
+
+    @Test
+    void register_lanceExceptionSiSubscriptionEchoue() {
+        when(passwordEncoder.encode("pwd")).thenReturn("ENCODED");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+            User saved = invocation.getArgument(0);
+            saved.setId(99L);
+            return saved;
+        });
+        when(notificationClient.findIncidentGroupId()).thenReturn(3L);
+        Mockito.doThrow(new NotificationClient.NotificationClientException("boom"))
+                .when(notificationClient).subscribeUserToGroup(99L, 3L);
+
+        assertThrows(IllegalStateException.class, () -> userService.register("alice", "pwd"));
     }
 
     @Test

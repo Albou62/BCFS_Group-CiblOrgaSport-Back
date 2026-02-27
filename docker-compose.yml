@@ -35,6 +35,8 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/glop
       SPRING_DATASOURCE_USERNAME: admin
       SPRING_DATASOURCE_PASSWORD: password
+      NOTIFICATION_BASE_URL: http://notification-service:8080
+      NOTIFICATION_INCIDENT_GROUP_NAME: Incidents
     depends_on:
       db:
         condition: service_healthy
@@ -67,6 +69,7 @@ services:
       DATASOURCE_USERNAME: admin
       DATASOURCE_PASSWORD: password
       KAFKA_URL: CONTROLLER://localhost:9091,HOST://0.0.0.0:9092,DOCKER://0.0.0.0:9093
+      INCIDENT_GROUP_NAME: Incidents
     depends_on:
       kafka:
         condition: service_started

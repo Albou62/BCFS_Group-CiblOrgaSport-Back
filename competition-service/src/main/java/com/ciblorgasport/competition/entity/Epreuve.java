@@ -3,6 +3,8 @@ package com.ciblorgasport.competition.entity;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "epreuve")
@@ -21,6 +23,11 @@ public class Epreuve {
     @ManyToOne
     @JoinColumn(name = "competition_id")
     private Competition competition;
+
+    @OneToMany(mappedBy = "epreuve",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true)
+    private List<Manche> manches = new ArrayList<>();
 
     // Getters / setters
 
@@ -62,5 +69,13 @@ public class Epreuve {
 
     public void setCompetition(Competition competition) {
         this.competition = competition;
+    }
+
+    public List<Manche> getManches() {
+        return manches;
+    }
+
+    public void setManches(List<Manche> manches) {
+        this.manches = manches;
     }
 }

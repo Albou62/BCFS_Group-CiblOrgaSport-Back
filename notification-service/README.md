@@ -1,93 +1,143 @@
-# Route configuration:
+# Notification Service - API
 
-## /groups
-### GET
-- Returns
-    - 200:
-        - Array of objects:
-            - GroupID
-            - GroupName
+## Base URL
+- Via gateway: `http://localhost:8080/api/notification`
+- Direct service (conteneur): `http://localhost:8080`
 
-### POST
-- RequestBody
-    - name {String}
+Exemples:
+- Gateway `GET /api/notification/group`
+- Service direct `GET /group`
 
-- Returns
-    - 200:
-        - Group created in Database
-    - 500:
-        - Internal Server Error
+## Endpoints
 
-## /subscription
-### GET
-- RequestBody:
-    - UserID {String, UUID Format}
+### `GET /hello`
+Health check simple.
 
-- Returns:
-    - 200:
-        - Array of objects:
-            - GroupID {Long}
-            - GroupName {String}
-            - SubscriptionDate {String, Date Format}
-    - 404:
-        - User not found
-    - 500:
-        - Internal server error
+Responses:
+- `200 OK`
+```json
+"Hello from notifications"
+```
 
-### POST
-- RequestBody
-    - UserID {Long}
-    - GroupID {Long}
+### `GET /group`
+Liste les groupes de notifications.
 
-- Returns
-    - 202:
-        - User added to notification group
-    - 404:
-        - Group or User not found
-    - 500
-        - Internal server error
+Responses:
+- `200 OK`
+```json
+[
+  {
+    "groupId": "1",
+    "groupName": "Athletisme"
+  }
+]
+```
+- `500 Internal Server Error`
 
-### DELETE
-- RequestBody
-    - UserID {Long}
-    - GroupID {Long}
+### `POST /group`
+Crée un groupe.
 
-- Returns
-    - 200:
-        - User removed from notification group
-    - 500
-        - Internal Server Error
-    - 404
-        - Group or User not found
+Request body:
+```json
+{
+  "name": "Athletisme"
+}
+```
 
-## /notification
-### GET
-- RequestBody:
-    - UserID {Long}
+Responses:
+- `200 OK` (corps vide)
+- `400 Bad Request`: JSON invalide ou `name` manquant
+- `500 Internal Server Error`
 
-- Returns:
-    - 200:
-        - Array of objects:
-            - ID {Long}
-            - Date {String, Date Format}
-            - Group {String}
-            - Label {String}
-            - ImpactLevel {String}
-    - 500:
-        - Internal Server Error
-    - 404:
-        - User not found
+### `GET /subscription?userId={userId}`
+Liste les abonnements d'un utilisateur.
 
-### POST
-- RequestBody:
-    - GroupID {Long}
-    - Label {String}
-    - ImpactLevel {String}
+Important: `userId` est un query param (pas un body JSON).
 
-- Returns:
-    - 202:
-        - Message sent
-    - 500:
-        - Internal Server Error
-    - 404:
-        - Subscription Group not found
+Responses:
+- `200 OK`
+```json
+[
+  {
+    "groupId": "1",
+    "userId": "42",
+    "dateInscription": "Thu Feb 27 10:00:00 UTC 2026",
+    "groupName": "Athletisme"
+  }
+]
+```
+- `400 Bad Request`: `userId` absent ou invalide
+- `500 Internal Server Error`
+
+### `POST /subscription`
+Abonne un utilisateur à un groupe.
+
+Request body:
+```json
+{
+  "userId": 42,
+  "groupId": 1
+}
+```
+
+Responses:
+- `200 OK` (corps vide)
+- `400 Bad Request`: JSON invalide/champs manquants
+- `500 Internal Server Error`
+
+### `DELETE /subscription`
+Désabonne un utilisateur d'un groupe.
+
+Request body:
+```json
+{
+  "userId": 42,
+  "groupId": 1
+}
+```
+
+Responses:
+- `200 OK`
+```json
+"OK"
+```
+- `400 Bad Request`: JSON invalide/champs manquants
+- `500 Internal Server Error`
+
+### `GET /notification?userId={userId}`
+Consomme les messages Kafka du topic utilisateur (`userId`) et retourne les notifications reçues.
+
+Important: `userId` est un query param.
+
+Responses:
+- `200 OK`
+```json
+[
+  "Nouvelle notification"
+]
+```
+- `400 Bad Request`: `userId` absent ou invalide
+
+### `POST /notification`
+Envoie une notification aux abonnés d'un groupe et sauvegarde l'historique.
+
+Request body:
+```json
+{
+  "groupId": 1,
+  "label": "Début de l'épreuve",
+  "impactLevel": "INFO"
+}
+```
+
+Responses:
+- `200 OK`
+```json
+"OK"
+```
+- `400 Bad Request`: JSON invalide/champs manquants
+- `500 Internal Server Error`
+
+## Notes
+- Les réponses texte (`OK`, erreurs) sont renvoyées avec `Content-Type: application/json`, même quand le corps n'est pas un objet JSON.
+- Les IDs dans les payloads de réponse sont sérialisés sous forme de chaînes dans plusieurs endpoints (`groupId`, `userId`).

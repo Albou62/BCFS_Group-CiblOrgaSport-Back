@@ -1,0 +1,20 @@
+groups:
+  - name: ciblorgasport-monitoring
+    rules:
+      - alert: ServiceDown
+        expr: up{job=~"auth-service|competition-service|notification-service|api-gateway"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service down ({{ $labels.job }})"
+          description: "Prometheus cannot scrape {{ $labels.job }} for more than 2 minutes."
+
+      - alert: NotificationUnhandledErrors
+        expr: sum(rate(notification_http_errors_total[5m])) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Unhandled errors in notification-service"
+          description: "notification-service has unhandled HTTP errors for 5+ minutes."

@@ -1,6 +1,8 @@
 package com.ciblorgasport.notifications;
 
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.StringWriter;
 import java.net.InetSocketAddress;
 import java.sql.SQLException;
 import java.util.concurrent.ExecutorService;
@@ -14,10 +16,32 @@ import com.ciblorgasport.notifications.serverHandlers.NotificationHandler;
 import com.ciblorgasport.notifications.serverHandlers.SubscriptionHandler;
 import com.ciblorgasport.notifications.services.DatabaseService;
 import com.sun.net.httpserver.HttpServer;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+
+import io.prometheus.client.CollectorRegistry;
+import io.prometheus.client.Counter;
+import io.prometheus.client.Histogram;
+import io.prometheus.client.exporter.common.TextFormat;
 
 public class Server {
     private static final String DEFAULT_INCIDENT_GROUP_NAME = "Incidents";
     private static final AtomicLong INCIDENT_GROUP_BOOTSTRAP_SUCCESS = new AtomicLong(0);
+    private static final Counter HTTP_REQUESTS_TOTAL = Counter.build()
+        .name("notification_http_requests_total")
+        .help("Total HTTP requests handled by notification-service")
+        .labelNames("route", "method")
+        .register();
+    private static final Counter HTTP_ERRORS_TOTAL = Counter.build()
+        .name("notification_http_errors_total")
+        .help("Total unhandled HTTP request errors in notification-service")
+        .labelNames("route", "method")
+        .register();
+    private static final Histogram HTTP_REQUEST_DURATION_SECONDS = Histogram.build()
+        .name("notification_http_request_duration_seconds")
+        .help("HTTP request duration in seconds for notification-service")
+        .labelNames("route", "method")
+        .register();
     
     public void start() {
         try {
@@ -27,11 +51,12 @@ public class Server {
             HttpServer server = HttpServer.create(
                 new InetSocketAddress("0.0.0.0", 8080), 0
             );
-            server.createContext("/subscription", new SubscriptionHandler(databaseService));
-            server.createContext("/notification", new NotificationHandler());
-            server.createContext("/group", new GroupHandler(databaseService));
+            server.createContext("/subscription", instrumented("/subscription", new SubscriptionHandler(databaseService)));
+            server.createContext("/notification", instrumented("/notification", new NotificationHandler()));
+            server.createContext("/group", instrumented("/group", new GroupHandler(databaseService)));
 
-            server.createContext("/hello", new HelloHandler());
+            server.createContext("/hello", instrumented("/hello", new HelloHandler()));
+            server.createContext("/metrics", this::handleMetrics);
 
             // Create a thread pool with a fixed number of threads
             ExecutorService executor = Executors.newFixedThreadPool(10);
@@ -47,6 +72,41 @@ public class Server {
             }));
         } catch (IOException e) {
             System.out.println("Failed to start server: " + e);
+        }
+    }
+
+    private HttpHandler instrumented(String route, HttpHandler delegate) {
+        return exchange -> {
+            String method = exchange.getRequestMethod();
+            HTTP_REQUESTS_TOTAL.labels(route, method).inc();
+            Histogram.Timer timer = HTTP_REQUEST_DURATION_SECONDS.labels(route, method).startTimer();
+            try {
+                delegate.handle(exchange);
+            } catch (Exception e) {
+                HTTP_ERRORS_TOTAL.labels(route, method).inc();
+                try {
+                    byte[] body = "internal_error".getBytes();
+                    exchange.sendResponseHeaders(500, body.length);
+                    try (OutputStream os = exchange.getResponseBody()) {
+                        os.write(body);
+                    }
+                } catch (IOException ignored) {
+                    // If response was already sent by the delegate, keep original behavior.
+                }
+            } finally {
+                timer.observeDuration();
+            }
+        };
+    }
+
+    private void handleMetrics(HttpExchange exchange) throws IOException {
+        StringWriter writer = new StringWriter();
+        TextFormat.write004(writer, CollectorRegistry.defaultRegistry.metricFamilySamples());
+        byte[] response = writer.toString().getBytes();
+        exchange.getResponseHeaders().set("Content-Type", TextFormat.CONTENT_TYPE_004);
+        exchange.sendResponseHeaders(200, response.length);
+        try (OutputStream os = exchange.getResponseBody()) {
+            os.write(response);
         }
     }
 

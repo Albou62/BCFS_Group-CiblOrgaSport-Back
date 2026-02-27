@@ -18,7 +18,15 @@ import com.ciblorgasport.notifications.services.DatabaseService;
 import com.ciblorgasport.notifications.utils.Utils;
 
 public class SubscriptionHandler implements HttpHandler {
-    DatabaseService dbService = new DatabaseService();
+    private final DatabaseService dbService;
+
+    public SubscriptionHandler() {
+        this(new DatabaseService());
+    }
+
+    public SubscriptionHandler(DatabaseService dbService) {
+        this.dbService = dbService;
+    }
 
     @Override
     public void handle(HttpExchange exchange) throws IOException {
@@ -38,8 +46,9 @@ public class SubscriptionHandler implements HttpHandler {
             Long groupId = jsonObject.getLong("groupId");
             Long userId = jsonObject.getLong("userId");
             String curTime = new Date().toString();
-            this.dbService.insertUserInGroup(userId, groupId, curTime);
-            Utils.sendResponse(exchange, "".getBytes(), 200);
+            boolean created = this.dbService.insertUserInGroupIfNotExists(userId, groupId, curTime);
+            int status = created ? 201 : 204;
+            Utils.sendResponse(exchange, "".getBytes(), status);
         } catch(JSONException e) {
             e.printStackTrace();
             byte[] bytes = "Bad request".getBytes(StandardCharsets.UTF_8);

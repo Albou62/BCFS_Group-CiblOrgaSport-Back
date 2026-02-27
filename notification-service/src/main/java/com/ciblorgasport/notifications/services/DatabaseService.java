@@ -5,6 +5,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,30 +14,40 @@ import com.ciblorgasport.notifications.models.SubscriptionTableRow;
 
 public class DatabaseService {
     public static final String SELECT_ALL_GROUPS = "SELECT * FROM groups;";
+    public static final String SELECT_GROUP_BY_NAME = "SELECT * FROM groups WHERE name = ?;";
     public static final String SELECT_GROUP_NAME = "SELECT name FROM groups WHERE id = ?;";
     public static final String SELECT_USER_BY_GROUP  = "SELECT userId FROM abonnements WHERE groupId = ?;";
     public static final String SELECT_GROUPS_BY_USER = "SELECT * FROM abonnements WHERE userId = ?;";
+    public static final String SELECT_SUBSCRIPTION = "SELECT id FROM abonnements WHERE userId = ? AND groupId = ?;";
     public static final String INSERT_NEW_GROUP = "INSERT INTO groups (name) VALUES (?);";
     public static final String INSERT_USER_GROUP_ABONNEMENTS = "INSERT INTO abonnements (userId, groupId, timestamp) VALUES (?, ?, ?);";
     public static final String DELETE_USER_FROM_GROUP = "DELETE FROM abonnements WHERE groupId = ? AND userId = ?;";
     public static final String ADD_NOTIFICATION_TO_HISTORY = "INSERT INTO notifs (groupId, label, impactLevel, timestamp) VALUES (?, ?, ?, ?);";
 
-    public static final String CREATE_GROUPS_TABLE = "CREATE TABLE IF NOT EXISTS groups (id SERIAL PRIMARY KEY, name VARCHAR(255));";
+    public static final String CREATE_GROUPS_TABLE = "CREATE TABLE IF NOT EXISTS groups (id SERIAL PRIMARY KEY, name VARCHAR(255) NOT NULL);";
     public static final String CREATE_ABONNEMENTS_TABLE = "CREATE TABLE IF NOT EXISTS abonnements (id SERIAL PRIMARY KEY, userId INTEGER, groupId INTEGER, timestamp VARCHAR(255));";
     public static final String CREATE_NOTIFS_TABLE = "CREATE TABLE IF NOT EXISTS notifs (id SERIAL PRIMARY KEY, groupId INTEGER, label VARCHAR(255), impactLevel VARCHAR(255), timestamp VARCHAR(255));";
+    public static final String CREATE_GROUPS_NAME_UNIQUE_INDEX = "CREATE UNIQUE INDEX IF NOT EXISTS uk_groups_name ON groups(name);";
+    public static final String CREATE_ABONNEMENTS_USER_GROUP_UNIQUE_INDEX = "CREATE UNIQUE INDEX IF NOT EXISTS uk_abonnements_user_group ON abonnements(userId, groupId);";
 
     private String url;
     private String username;
     private String password;
 
     public DatabaseService() {
+        this(true);
+    }
+
+    protected DatabaseService(boolean initializeSchema) {
         this.url = System.getenv("DATASOURCE_URL");
         this.username = System.getenv("DATASOURCE_USERNAME");
         this.password = System.getenv("DATASOURCE_PASSWORD");
-        try {
-            createTables();
-        } catch (SQLException e) {
-            e.printStackTrace();
+        if (initializeSchema) {
+            try {
+                createTables();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -48,10 +59,14 @@ public class DatabaseService {
         try (Connection conn = getConnection();
             PreparedStatement cat = conn.prepareStatement(CREATE_ABONNEMENTS_TABLE);
             PreparedStatement cgt = conn.prepareStatement(CREATE_GROUPS_TABLE);
-            PreparedStatement cnt = conn.prepareStatement(CREATE_NOTIFS_TABLE)) {
+            PreparedStatement cnt = conn.prepareStatement(CREATE_NOTIFS_TABLE);
+            PreparedStatement groupsUniqueIdx = conn.prepareStatement(CREATE_GROUPS_NAME_UNIQUE_INDEX);
+            PreparedStatement abonnementsUniqueIdx = conn.prepareStatement(CREATE_ABONNEMENTS_USER_GROUP_UNIQUE_INDEX)) {
             cat.execute();
             cgt.execute();
             cnt.execute();
+            groupsUniqueIdx.execute();
+            abonnementsUniqueIdx.execute();
         }
     }
 
@@ -84,6 +99,20 @@ public class DatabaseService {
                 groupName = rs.getString("name");
             }
             return groupName;
+        }
+    }
+
+    public GroupTableRow getGroupByName(String name) throws SQLException {
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(SELECT_GROUP_BY_NAME)) {
+
+            stmt.setString(1, name);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                return new GroupTableRow(rs.getLong("id"), rs.getString("name"));
+            }
+            return null;
         }
     }
 
@@ -124,12 +153,73 @@ public class DatabaseService {
         return groups;
     }
 
-    public void insertNewGroup(String groupName) throws SQLException {
+    public Long insertNewGroup(String groupName) throws SQLException {
         try (Connection conn = getConnection();
-            PreparedStatement stmt = conn.prepareStatement(INSERT_NEW_GROUP)) {
+            PreparedStatement stmt = conn.prepareStatement(INSERT_NEW_GROUP, Statement.RETURN_GENERATED_KEYS)) {
 
             stmt.setString(1, groupName);
             stmt.execute();
+
+            ResultSet generatedKeys = stmt.getGeneratedKeys();
+            if (generatedKeys.next()) {
+                return generatedKeys.getLong(1);
+            }
+            return null;
+        }
+    }
+
+    public GroupTableRow createGroupIfNotExists(String groupName) throws SQLException {
+        GroupTableRow existingGroup = getGroupByName(groupName);
+        if (existingGroup != null) {
+            return existingGroup;
+        }
+
+        try {
+            Long newId = insertNewGroup(groupName);
+            if (newId != null) {
+                return new GroupTableRow(newId, groupName);
+            }
+        } catch (SQLException e) {
+            // If another instance created the same group concurrently, unique index will reject.
+            GroupTableRow concurrentGroup = getGroupByName(groupName);
+            if (concurrentGroup != null) {
+                return concurrentGroup;
+            }
+            throw e;
+        }
+
+        GroupTableRow fallbackGroup = getGroupByName(groupName);
+        if (fallbackGroup == null) {
+            throw new SQLException("Group creation failed for name: " + groupName);
+        }
+        return fallbackGroup;
+    }
+
+    public boolean isUserInGroup(Long userId, Long groupId) throws SQLException {
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(SELECT_SUBSCRIPTION)) {
+
+            stmt.setLong(1, userId);
+            stmt.setLong(2, groupId);
+            ResultSet rs = stmt.executeQuery();
+            return rs.next();
+        }
+    }
+
+    public boolean insertUserInGroupIfNotExists(Long userId, Long groupId, String timestamp) throws SQLException {
+        if (isUserInGroup(userId, groupId)) {
+            return false;
+        }
+
+        try {
+            insertUserInGroup(userId, groupId, timestamp);
+            return true;
+        } catch (SQLException e) {
+            // In case of race conditions, unique index can reject duplicate inserts.
+            if (isUserInGroup(userId, groupId)) {
+                return false;
+            }
+            throw e;
         }
     }
 

@@ -72,6 +72,7 @@ public class SecurityConfig {
         // IMPORTANT : Ne mettez pas "*" si setAllowCredentials est à true
         configuration.setAllowedOrigins(Arrays.asList(
             "http://localhost:1002",  // Votre Front-End
+            "http://localhost:5173",  // Front-End dev (Vite)
             "http://localhost:8080",  // La Gateway (Indispensable !)
             "http://localhost"        // Sécurité supplémentaire
         ));

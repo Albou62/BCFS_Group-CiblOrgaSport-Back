@@ -18,7 +18,7 @@ Le gateway NGINX expose une API unifiée et proxy les requêtes vers:
 
 ### Auth Service (proxy vers `auth-service`)
 - `/api/auth`
-- `/api/auth/admin`
+- `/api/admin`
 - `/api/auth/hello`
 
 Note: les routes réelles du service auth incluent aussi `/api/admin/users`.

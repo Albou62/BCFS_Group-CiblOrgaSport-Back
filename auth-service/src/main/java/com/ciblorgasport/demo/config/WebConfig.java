@@ -12,6 +12,7 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addMapping("/**")
         .allowedOrigins(
                 "http://localhost:1002", 
+                "http://localhost:5173",
                 "https://bcfs-group-ciblorgasport-front.onrender.com" 
             )
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")

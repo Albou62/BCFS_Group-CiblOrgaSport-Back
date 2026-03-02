@@ -41,8 +41,9 @@ public class EpreuveService {
     }
 
     public List<EpreuveDto> listUpcoming(int limit) {
-        List<Epreuve> all = epreuveRepo
-                .findByHorairePublicAfterOrderByHorairePublicAsc(LocalDateTime.now());
+        LocalDateTime threshold = LocalDateTime.now().minusHours(2);
+        
+        List<Epreuve> all = epreuveRepo.findByHorairePublicAfterOrderByHorairePublicAsc(threshold);
         return all.stream()
                 .limit(limit)
                 .map(this::toDto)
@@ -55,7 +56,8 @@ public class EpreuveService {
                 e.getName(),
                 e.getHoraireAthletes(),
                 e.getHorairePublic(),
-                e.getCompetition() != null ? e.getCompetition().getId() : null
+                e.getCompetition() != null ? e.getCompetition().getId() : null,
+                e.getCompetition().getName()
         );
     }
 }

@@ -7,5 +7,6 @@ public record EpreuveDto(
         String name,
         LocalDateTime horaireAthletes,
         LocalDateTime horairePublic,
-        Long competitionId
+        Long competitionId,
+        String competitionName
 ) { }

@@ -4,13 +4,13 @@ services:
     build:
       context: .
       dockerfile: api-gateway/Dockerfile
-    container_name: api-gateway
+    container_name: ciblorgasport-api-gateway
     ports:
       - "8080:80"
     depends_on:
-      auth-service:
-        condition: service_started
       user-service:
+        condition: service_started
+      auth-service:
         condition: service_started
       competition-service:
         condition: service_started
@@ -44,7 +44,6 @@ services:
         condition: service_healthy
     networks:
       - ciblorgasport
-  
 
   user-service:
     build:
@@ -133,8 +132,6 @@ services:
       - 9090:9090
     depends_on:
       auth-service:
-        condition: service_started
-      user-service:
         condition: service_started
       competition-service:
         condition: service_started

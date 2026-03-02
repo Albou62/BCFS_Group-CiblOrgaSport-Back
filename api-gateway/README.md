@@ -30,6 +30,9 @@ Note: les routes réelles du service auth incluent aussi `/api/admin/users`.
 - `/api/epreuves`
 - `/api/manches`
 
+### User Service (proxy vers `user-service`)
+- `/api/users/{path}` -> `/{path}` sur le service user
+
 ### Notification Service (proxy vers `notification-service`)
 - `/api/notification/{path}` -> `/{path}` sur le service notification
 

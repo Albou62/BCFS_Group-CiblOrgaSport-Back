@@ -10,12 +10,26 @@ import java.util.List;
 public class DocumentService {
     @Autowired private DocumentRepository documentRepo;
 
-    // Suppression du Long authId, on utilise uniquement le username
     public Document uploadDocument(Document doc, String username) {
-        doc.setUploaderUsername(username); // Lien avec le token
-        doc.setAthleteName(username);      // Nom affiché pour le commissaire
-        doc.setStatus("EN_ATTENTE");
-        return documentRepo.save(doc);
+        String cleanUsername = username.toLowerCase().trim();
+        
+        List<Document> existingDocs = documentRepo.findByUploaderUsername(cleanUsername);
+        
+        Document docToSave = doc;
+        
+        for (Document existing : existingDocs) {
+            if (existing.getType().equalsIgnoreCase(doc.getType())) {
+                docToSave = existing; 
+                docToSave.setFileName(doc.getFileName()); 
+                break;
+            }
+        }
+
+        docToSave.setUploaderUsername(cleanUsername); 
+        docToSave.setAthleteName(cleanUsername);     
+        docToSave.setStatus("EN_ATTENTE"); 
+        
+        return documentRepo.save(docToSave);
     }
 
     public List<Document> getPendingDocuments() {
@@ -25,7 +39,11 @@ public class DocumentService {
     public Document reviewDocument(Long docId, String status) {
         Document doc = documentRepo.findById(docId)
                 .orElseThrow(() -> new RuntimeException("Document introuvable"));
-        doc.setStatus(status); // "VALIDE" ou "REFUSE"
+        doc.setStatus(status); 
         return documentRepo.save(doc);
+    }
+    
+    public List<Document> getDocumentsByUser(String username) {
+        return documentRepo.findByUploaderUsername(username);
     }
 }

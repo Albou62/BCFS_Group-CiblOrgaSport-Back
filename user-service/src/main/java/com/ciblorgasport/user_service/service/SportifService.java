@@ -13,16 +13,26 @@ public class SportifService {
     @Autowired private SportifRepository sportifRepo;
     @Autowired private DocumentRepository documentRepo;
 
-    // Récupération du profil sportif par le nom d'utilisateur (badge JWT)
     public SportifProfile getProfile(String username) {
-        return sportifRepo.findByUsername(username);
+        SportifProfile sportif = sportifRepo.findByUsername(username);
+        
+       
+        if (sportif == null) {
+            sportif = new SportifProfile();
+            sportif.setUsername(username);
+            sportif.setTrackingAccepted(true);
+            sportif = sportifRepo.save(sportif);
+        }
+        
+        List<Document> docs = documentRepo.findByUploaderUsername(username);
+        sportif.setDocuments(docs);
+        
+        return sportif;
     }
-
     public boolean checkEligibility(Long athleteId) {
         SportifProfile sportif = sportifRepo.findById(athleteId).orElse(null);
         if (sportif == null) return false;
 
-        // Règle métier : Vérification des documents par le username du profil
         List<Document> docs = documentRepo.findByUploaderUsername(sportif.getUsername());
         
         boolean validPass = docs.stream()
@@ -30,7 +40,6 @@ public class SportifService {
         boolean validCertif = docs.stream()
                 .anyMatch(d -> "Certificat".equals(d.getType()) && "VALIDE".equals(d.getStatus()));
         
-        // Un sportif est éligible si ses 2 docs sont valides ET qu'il a accepté le tracking
         return validPass && validCertif && sportif.isTrackingAccepted();
     }
 }

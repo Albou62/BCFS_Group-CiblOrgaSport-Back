@@ -7,6 +7,8 @@ import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.security.Principal;
 import java.util.List;
 
 @RestController
@@ -19,7 +21,6 @@ public class UserController {
     @Autowired private TaskService taskService;
     @Autowired private TicketService ticketService;
 
-    // Méthode unique et réelle pour identifier l'utilisateur
     private String extractUsername(String authHeader) {
         try {
             if (authHeader == null || !authHeader.startsWith("Bearer ")) return null;
@@ -27,22 +28,27 @@ public class UserController {
             String[] parts = token.split("\\.");
             String payload = new String(java.util.Base64.getUrlDecoder().decode(parts[1]));
             org.json.JSONObject json = new org.json.JSONObject(payload);
-            return json.getString("sub"); // "sub" contient le username dans votre JwtService
+            return json.getString("sub"); 
         } catch (Exception e) {
             return null;
         }
     }
 
     // --- SPORTIF ---
+    
     @GetMapping("/sportif/me")
-    public SportifProfile getMyProfile(@RequestHeader("Authorization") String token) {
-        return sportifService.getProfile(extractUsername(token));
+    public SportifProfile getMyProfile(@RequestHeader("Authorization") String authHeader) {
+        String username = extractUsername(authHeader);
+        if (username == null) throw new RuntimeException("Utilisateur non identifié");
+        return sportifService.getProfile(username);
     }
 
     @PostMapping("/documents")
-    public Document uploadDoc(@RequestHeader("Authorization") String token, @RequestBody Document doc) {
-        // Le service DocumentService doit être adapté pour accepter le username
-        return documentService.uploadDocument(doc, extractUsername(token));
+    public Document upload(@RequestBody Document doc, @RequestHeader("Authorization") String authHeader) {
+        String username = extractUsername(authHeader);
+        if (username == null) throw new RuntimeException("Utilisateur non identifié");
+        
+        return documentService.uploadDocument(doc, username);
     }
 
     @GetMapping("/sportifs/{athleteId}/eligibility")
@@ -50,20 +56,20 @@ public class UserController {
         return ResponseEntity.ok(sportifService.checkEligibility(athleteId));
     }
 
-    // --- VOLONTAIRE ---
+    // --- VOLONTAIRE & SPECTATEUR (Même logique) ---
+
     @GetMapping("/tasks")
     public List<Task> getMyTasks(@RequestHeader("Authorization") String authHeader) {
         return taskService.getTasksForVolunteer(extractUsername(authHeader));
     }
 
-    // --- SPECTATEUR ---
     @GetMapping("/tickets")
-    public List<Ticket> getMyTickets(@RequestHeader("Authorization") String token) {
-        return ticketService.getTicketsForUser(extractUsername(token));
+    public List<Ticket> getMyTickets(@RequestHeader("Authorization") String authHeader) {
+        return ticketService.getTicketsForUser(extractUsername(authHeader));
     }
 
     @PostMapping("/tickets")
-    public Ticket addTicket(@RequestHeader("Authorization") String token, @RequestBody Ticket ticket) {
-        return ticketService.addTicket(ticket, extractUsername(token));
+    public Ticket addTicket(@RequestHeader("Authorization") String authHeader, @RequestBody Ticket ticket) {
+        return ticketService.addTicket(ticket, extractUsername(authHeader));
     }
 }

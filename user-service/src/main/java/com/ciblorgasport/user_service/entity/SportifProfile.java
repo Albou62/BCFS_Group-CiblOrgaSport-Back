@@ -1,5 +1,7 @@
 package com.ciblorgasport.user_service.entity;
 
+import java.util.List;
+
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -8,7 +10,7 @@ import lombok.Data;
 public class SportifProfile {
  @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
  private Long id;
- @Column(unique = true, nullable = false)
+ @Column(unique = true, nullable = true)
  private Long authUserId; 
  private String firstName;
  private String lastName;
@@ -16,6 +18,14 @@ public class SportifProfile {
  private String club;
  private boolean trackingAccepted = true;
  private String username;
+ @Transient 
+ private List<Document> documents;
+ public List<Document> getDocuments() {
+	return documents;
+}
+ public void setDocuments(List<Document> documents) {
+	this.documents = documents;
+ }
  public String getUsername() {
 	return username;
 }

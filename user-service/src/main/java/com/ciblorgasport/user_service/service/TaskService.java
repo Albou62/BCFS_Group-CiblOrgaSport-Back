@@ -14,12 +14,11 @@ public class TaskService {
     @Autowired private VolontaireRepository volontaireRepo;
 
     public Task assignTask(Long userId, String username, String title, String timeSlot) {
-        // On cherche par authUserId
         VolontaireProfile vol = volontaireRepo.findByAuthUserId(userId)
                 .orElseGet(() -> {
                     VolontaireProfile newProfile = new VolontaireProfile();
                     newProfile.setAuthUserId(userId);
-                    newProfile.setUsername(username); // Indispensable pour la vue Volontaire !
+                    newProfile.setUsername(username); 
                     return volontaireRepo.save(newProfile);
                 });
 
@@ -33,8 +32,6 @@ public class TaskService {
     public List<Task> getTasksForVolunteer(String username) {
         if (username == null || username.isEmpty()) return List.of();
         
-        // On utilise la méthode de recherche par traversée de relation
-        // C'est beaucoup plus robuste car ça ne dépend pas de l'ID du profil en mémoire
         return taskRepo.findByVolontaireUsername(username);
     }
 

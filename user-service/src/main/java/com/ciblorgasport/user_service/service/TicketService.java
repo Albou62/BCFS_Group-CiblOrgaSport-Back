@@ -10,7 +10,6 @@ import java.util.List;
 public class TicketService {
     @Autowired private TicketRepository ticketRepo;
 
-    // On utilise désormais le username extrait du Token
     public Ticket addTicket(Ticket ticket, String username) {
         ticket.setOwnerUsername(username); 
         return ticketRepo.save(ticket);

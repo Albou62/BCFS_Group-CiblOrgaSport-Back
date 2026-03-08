@@ -11,7 +11,7 @@ public class Task {
  private Long id;
  private String title;
  private String status; // "À venir", "En cours", "Terminé"
- private String timeSlot; // ex: "08:00 - 12:00" pour coller à votre UI
+ private String timeSlot; // ex: "08:00 - 12:00" 
  private LocalDateTime startTime;
 
  @ManyToOne

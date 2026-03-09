@@ -10,10 +10,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/users")
-@CrossOrigin(origins = "*")
 public class UserController {
 
     @Autowired private SportifService sportifService;
@@ -62,6 +62,8 @@ public class UserController {
     public List<Task> getMyTasks(@RequestHeader("Authorization") String authHeader) {
         return taskService.getTasksForVolunteer(extractUsername(authHeader));
     }
+    
+  
 
     @GetMapping("/tickets")
     public List<Ticket> getMyTickets(@RequestHeader("Authorization") String authHeader) {
@@ -72,4 +74,5 @@ public class UserController {
     public Ticket addTicket(@RequestHeader("Authorization") String authHeader, @RequestBody Ticket ticket) {
         return ticketService.addTicket(ticket, extractUsername(authHeader));
     }
+    
 }

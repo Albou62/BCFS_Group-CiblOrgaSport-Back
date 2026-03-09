@@ -1,5 +1,10 @@
 package com.ciblorgasport.user_service.entity;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -14,6 +19,17 @@ public class VolontaireProfile {
  private String lastName;
  private String skills;
  private String username;
+ 
+ @OneToMany(mappedBy = "volontaire", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+ @JsonManagedReference 
+ private List<Task> tasks = new ArrayList<>();
+ public List<Task> getTasks() {
+     return tasks;
+ }
+
+ public void setTasks(List<Task> tasks) {
+     this.tasks = tasks;
+ }
  public String getUsername() {
 	return username;
 }

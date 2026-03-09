@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
 @Entity
 @Data
 public class Task {
@@ -16,8 +18,8 @@ public class Task {
 
  @ManyToOne
  @JoinColumn(name = "volontaire_id")
+ @JsonBackReference 
  private VolontaireProfile volontaire;
-
  public Long getId() {
 	return id;
  }

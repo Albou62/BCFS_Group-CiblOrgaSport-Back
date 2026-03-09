@@ -13,6 +13,7 @@ public class TaskService {
     @Autowired private TaskRepository taskRepo;
     @Autowired private VolontaireRepository volontaireRepo;
 
+
     public Task assignTask(Long userId, String username, String title, String timeSlot) {
         VolontaireProfile vol = volontaireRepo.findByAuthUserId(userId)
                 .orElseGet(() -> {
@@ -24,18 +25,37 @@ public class TaskService {
 
         Task task = new Task();
         task.setTitle(title);
-        task.setTimeSlot(timeSlot);
+        task.setTimeSlot(timeSlot); 
         task.setStatus("À venir");
         task.setVolontaire(vol);
+        
         return taskRepo.save(task);
     }
+
+    public List<VolontaireProfile> getAllVolunteersWithTasks() {
+        return volontaireRepo.findAll(); 
+    }
+    
     public List<Task> getTasksForVolunteer(String username) {
         if (username == null || username.isEmpty()) return List.of();
         
         return taskRepo.findByVolontaireUsername(username);
     }
 
-    public List<VolontaireProfile> getAllVolunteers() {
-        return volontaireRepo.findAll();
+  
+    
+    public boolean hasActiveTasks(String username) {
+        List<Task> tasks = taskRepo.findByVolontaireUsername(username);
+        return tasks.stream().anyMatch(t -> !"Terminée".equals(t.getStatus()));
     }
+
+	public void updateTaskStatus(Long taskId, String newStatus) {
+    Task task = taskRepo.findById(taskId)
+        .orElseThrow(() -> new RuntimeException("Tâche non trouvée"));
+    
+    task.setStatus(newStatus);
+    taskRepo.save(task);
+}
+    
+    
 }

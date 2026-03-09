@@ -8,6 +8,8 @@ services:
     ports:
       - "8080:80"
     depends_on:
+      user-service:
+        condition: service_started
       auth-service:
         condition: service_started
       competition-service:
@@ -37,6 +39,22 @@ services:
       SPRING_DATASOURCE_PASSWORD: password
       NOTIFICATION_BASE_URL: http://notification-service:8080
       NOTIFICATION_INCIDENT_GROUP_NAME: Incidents
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - ciblorgasport
+
+  user-service:
+    build:
+      context: .
+      dockerfile: user-service/Dockerfile
+    container_name: ciblorgasport-user
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/glop
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: password
     depends_on:
       db:
         condition: service_healthy

@@ -35,6 +35,12 @@ public class Competition {
                orphanRemoval = true)
     private List<Epreuve> epreuves = new ArrayList<>();
 
+    @Column(nullable = true)
+    private Integer maxAthletes;     // null = unlimited
+
+    @Column(nullable = false)
+    private Integer registrationDeadline; // epoch or LocalDateTime
+
     public boolean isValid() {
         return name != null
                 && dateDebut != null

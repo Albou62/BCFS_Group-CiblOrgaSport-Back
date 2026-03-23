@@ -42,4 +42,41 @@ public class SportifService {
         
         return validPass && validCertif && sportif.isTrackingAccepted();
     }
+    
+    public SportifProfile registerToEpreuve(String username, Long epreuveId) {
+        SportifProfile sportif = sportifRepo.findByUsername(username);
+        if (sportif == null) throw new RuntimeException("Profil introuvable");
+
+        if (!checkEligibility(sportif.getId())) {
+            throw new RuntimeException("Inscription refusée : Documents non validés ou traçage refusé.");
+        }
+
+        if (!sportif.getRegisteredEpreuveIds().contains(epreuveId)) {
+            sportif.getRegisteredEpreuveIds().add(epreuveId);
+        }
+
+        return sportifRepo.save(sportif);
+    }
+    
+    public List<SportifProfile> getInscrits(Long epreuveId) {
+        return sportifRepo.findAll().stream()
+                .filter(s -> s.getRegisteredEpreuveIds().contains(epreuveId))
+                .toList();
+    }
+	
+    public void unregisterFromEpreuve(String username, Long epreuveId) {
+        SportifProfile profile = sportifRepo.findByUsername(username);
+
+        if (profile == null) {
+            throw new RuntimeException("Profil introuvable pour l'utilisateur : " + username);
+        }
+
+        if (profile.getRegisteredEpreuveIds() != null) {
+            profile.getRegisteredEpreuveIds().removeIf(id -> id.equals(epreuveId));
+            sportifRepo.save(profile);
+        }
+    }
+    
+    
+    
 }

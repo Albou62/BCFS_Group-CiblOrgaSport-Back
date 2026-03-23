@@ -36,6 +36,9 @@ Note: les routes réelles du service auth incluent aussi `/api/admin/users`.
 ### Notification Service (proxy vers `notification-service`)
 - `/api/notification/{path}` -> `/{path}` sur le service notification
 
+### Localisation Service (proxy vers `geolocalisation-service)
+- `/api/localisation/{path}` -> `/{path}` sur le service geolocalisation
+
 Exemples:
 - `GET /api/notification/group` -> `GET /group`
 - `POST /api/notification/subscription` -> `POST /subscription`

@@ -77,6 +77,21 @@ services:
     networks:
       - ciblorgasport
 
+  geolocalisation-service:
+    build:
+      context: .
+      dockerfile: geolocalisation-service/Dockerfile
+    container_name: ciblorgasport-geolocalisation
+    environment:
+      JDBC_DATABASE_URL: jdbc:postgresql://db:5432/glop
+      JDBC_DATABASE_USERNAME: admin
+      JDBC_DATABASE_PASSWORD: password
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - ciblorgasport
+
   notification-service:
     build:
       context: .
@@ -175,6 +190,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    volumes:
+      - ./geolocalisation-service/db/init-geo.sql:/docker-entrypoint-initdb.d/init-geo.sql
     networks:
       - ciblorgasport
 

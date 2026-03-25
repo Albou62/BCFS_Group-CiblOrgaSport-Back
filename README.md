@@ -2,6 +2,17 @@
 
 1. docker compose up
 
+## Microservices
+
+Ce projet est composé des services suivants:
+
+- **api-gateway**: Le point d'entrée de l'API.
+- **auth-service**: Gère l'authentification et l'autorisation d'accès aux services.
+- **user-service**: Fait le management des données d'utilisateur.
+- **competition-service**: Gère les compétitions, résultats et événnements.
+- **notification-service**: Gère les notifications aux utilisateurs.
+- **geolocalisation-service**: Gère la géolocalisation des utilisateurs.
+
 # Initialization de la base de données (DEPRECATED)
 
 1. Création et run de la base

@@ -17,6 +17,7 @@ public class AdminController {
 
     @Autowired private DocumentService documentService;
     @Autowired private TaskService taskService;
+    @Autowired private SportifService sportifService;
 
     // --- COMMISSAIRE (Arthur) ---
     @GetMapping("/documents")
@@ -28,6 +29,19 @@ public class AdminController {
     public Document reviewDoc(@PathVariable Long id, @RequestBody Map<String, String> payload) {
         return documentService.reviewDocument(id, payload.get("status"));
     }
+    
+    @PostMapping("/sportif/inscrire")
+    public ResponseEntity<?> registerAthleteToEpreuve(@RequestBody Map<String, Object> payload) {
+        String username = (String) payload.get("username");
+        Long epreuveId = Long.parseLong(payload.get("epreuveId").toString());
+
+        try {
+            SportifProfile updatedProfile = sportifService.registerToEpreuve(username, epreuveId);
+            return ResponseEntity.ok(updatedProfile);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 
     // --- RESPONSABLE (Marius) ---
     @GetMapping("/volontaires")
@@ -38,7 +52,6 @@ public class AdminController {
     
     @PostMapping("/tasks/assign")
     public Task assignTask(@RequestBody Map<String, Object> payload) {
-        // On vérifie si l'ID est présent sous l'une des deux formes
         Object rawId = payload.get("volunteerId");
         if (rawId == null) rawId = payload.get("userId");
         
@@ -62,6 +75,21 @@ public class AdminController {
         }
         taskService.updateTaskStatus(id, newStatus);
         return ResponseEntity.ok().build();
+    }
+    
+    @GetMapping("/epreuves/{id}/participants")
+    public ResponseEntity<List<SportifProfile>> getParticipants(@PathVariable Long id) {
+        return ResponseEntity.ok(sportifService.getInscrits(id));
+    }
+    
+    @DeleteMapping("/epreuves/{epreuveId}/participants/{username}")
+    public ResponseEntity<?> removeAthleteFromEpreuve(@PathVariable Long epreuveId, @PathVariable String username) {
+        try {
+            sportifService.unregisterFromEpreuve(username, epreuveId);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Erreur lors de la désinscription");
+        }
     }
     
 }

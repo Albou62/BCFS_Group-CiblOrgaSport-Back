@@ -1,5 +1,6 @@
 package com.ciblorgasport.user_service.entity;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import jakarta.persistence.*;
@@ -20,6 +21,14 @@ public class SportifProfile {
  private String username;
  @Transient 
  private List<Document> documents;
+ 
+ @ElementCollection
+ @CollectionTable(name = "athlete_inscriptions", joinColumns = @JoinColumn(name = "sportif_id"))
+ @Column(name = "epreuve_id")
+ private List<Long> registeredEpreuveIds = new ArrayList<>();
+
+ public List<Long> getRegisteredEpreuveIds() { return registeredEpreuveIds; }
+ public void setRegisteredEpreuveIds(List<Long> registeredEpreuveIds) { this.registeredEpreuveIds = registeredEpreuveIds; }
  public List<Document> getDocuments() {
 	return documents;
 }

@@ -60,4 +60,17 @@ public class EpreuveService {
                 e.getCompetition().getName()
         );
     }
+
+    public List<EpreuveDto> findAll() {
+        return epreuveRepo.findAll().stream()
+                .map(epreuve -> new EpreuveDto(
+                    epreuve.getId(),
+                    epreuve.getName(),
+                    epreuve.getHoraireAthletes(),
+                    epreuve.getHorairePublic(),
+                    epreuve.getCompetition() != null ? epreuve.getCompetition().getId() : null,
+                    epreuve.getCompetition() != null ? epreuve.getCompetition().getName() : "N/A"
+                ))
+                .toList();
+    }
 }

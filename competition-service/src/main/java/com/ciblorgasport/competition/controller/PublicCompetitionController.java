@@ -20,4 +20,9 @@ public class PublicCompetitionController {
     public List<EpreuveDto> upcoming(@RequestParam(defaultValue = "3") int limit) {
         return epreuveService.listUpcoming(limit);
     }
+    
+    @GetMapping("/epreuves")
+    public List<EpreuveDto> getAllEpreuves() {
+        return epreuveService.findAll(); 
+    }
 }
